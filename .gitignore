@@ -1,0 +1,43 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.so
+
+# Logs and debugging
+# *.log
+# *.out
+*.pkl
+*.ckpt
+*.pth
+*.npz
+*.npy
+
+# PyTorch, HuggingFace cache
+checkpoints/
+outputs/
+runs/
+wandb/
+lightning_logs/
+huggingface/
+diffusers_cache/
+cache/
+.cache/
+stable-diffusion-v-1-4-original/
+stable-diffusion-v1-5/
+
+# Temporary files
+.DS_Store
+*.swp
+*.bak
+*.tmp
+
+# Datasets and intermediate results
+# data/
+cnt_eval/
+sty_eval/
+demo/
+
+# Model-specific folders (if generated)
+# Puff-Net/output/
+StyleID/output/
+Zero-shot/output/

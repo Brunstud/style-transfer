@@ -1,0 +1,6 @@
+Model: StyleID(based on stable-diffusion-v-1-4), ArtFID: 28.7845, FID: 18.1194, LPIPS: 0.5055, LPIPS_gray: 0.4200, CFSD: 0.2281
+Model: Z-Star(based on stable-diffusion-v1-5), ArtFID: 30.9345, FID: 20.8385, LPIPS: 0.4165, LPIPS_gray: 0.3560, CFSD: 0.2042
+Model: StyleID(based on stable-diffusion-v-1-4), color matching loss:0.2805275619029999
+Model: Z-Star(based on stable-diffusion-v1-5), color matching loss:0.5340157151222229
+Model: Puff-Net(15000iter), ArtFID: 36.3253, FID: 23.6090, LPIPS: 0.4761, LPIPS_gray: 0.3956, CFSD: 0.2208
+Model: Puff-Net(15000iter), color matching loss:0.5404972434043884
