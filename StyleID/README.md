@@ -34,6 +34,8 @@ conda activate StyleID
 Download the StableDiffusion weights from the [CompVis organization at Hugging Face](https://huggingface.co/CompVis/stable-diffusion-v-1-4-original)
 (download the `sd-v1-4.ckpt` file), and link them:
 ```
+huggingface-cli login  # input token
+wget --content-disposition "https://huggingface.co/CompVis/stable-diffusion-v-1-4-original/resolve/main/sd-v1-4.ckpt"
 ln -s <path/to/model.ckpt> models/ldm/stable-diffusion-v1/model.ckpt 
 ```
 
