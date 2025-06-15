@@ -4,7 +4,3 @@ Model: StyleID(based on stable-diffusion-v-1-4), color matching loss:0.280527561
 Model: Z-Star(based on stable-diffusion-v1-5), color matching loss:0.5340157151222229
 Model: Puff-Net(15000iter), ArtFID: 36.3253, FID: 23.6090, LPIPS: 0.4761, LPIPS_gray: 0.3956, CFSD: 0.2208
 Model: Puff-Net(15000iter), color matching loss:0.5404972434043884
-Model: StyleID, ArtFID: 28.8068, FID: 18.1348, LPIPS: 0.5055, LPIPS_gray: 0.4199, CFSD: 0.2281
-Model: StyleID, color matching loss:0.28045591711997986
-Model: zstStyleID, ArtFID: 30.5760, FID: 19.6119, LPIPS: 0.4834, LPIPS_gray: 0.4057, CFSD: 0.1939
-Model: zstStyleID, color matching loss:0.3648906946182251
