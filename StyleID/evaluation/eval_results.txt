@@ -6,5 +6,11 @@ Model: Puff-Net(15000iter), ArtFID: 36.3253, FID: 23.6090, LPIPS: 0.4761, LPIPS_
 Model: Puff-Net(15000iter), color matching loss:0.5404972434043884
 Model: StyleID, ArtFID: 28.8068, FID: 18.1348, LPIPS: 0.5055, LPIPS_gray: 0.4199, CFSD: 0.2281
 Model: StyleID, color matching loss:0.28045591711997986
-Model: zstStyleID, ArtFID: 30.5760, FID: 19.6119, LPIPS: 0.4834, LPIPS_gray: 0.4057, CFSD: 0.1939
-Model: zstStyleID, color matching loss:0.3648906946182251
+Model: Z-Star(based on stable-diffusion-v1-5), ArtFID: 30.9345, FID: 20.8385, LPIPS: 0.4165, LPIPS_gray: 0.3560, CFSD: 0.2042
+Model: Z-Star(based on stable-diffusion-v1-5), color matching loss:0.5340157151222229
+Model: StyleID+αArtFID, ArtFID: 30.5760, FID: 19.6119, LPIPS: 0.4834, LPIPS_gray: 0.4057, CFSD: 0.1939
+Model: StyleID+αArtFID, color matching loss:0.3648906946182251
+Model: StyleID+αArtFID+λTimestep+XDoG, ArtFID: 29.3455, FID: 19.5781, LPIPS: 0.4261, LPIPS_gray: 0.3540, CFSD: 0.2013
+Model: StyleID+αArtFID+λTimestep+XDoG, color matching loss:0.34817981719970703
+Model: StyleID+αArtFID+λTimestep, ArtFID: 29.3034, FID: 19.5078, LPIPS: 0.4289, LPIPS_gray: 0.3561, CFSD: 0.2007
+Model: StyleID+αArtFID+λTimestep, color matching loss:0.3447341024875641

@@ -31,37 +31,79 @@ def save_img_from_sample(model, samples_ddim, fname):
     img = Image.fromarray(x_sample.astype(np.uint8))
     img.save(fname)
 
+# Sobel 边缘增强模块（用于结构增强）
+def sobel_edge(x):
+    # x: [B, C, H, W]
+    Gx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=x.dtype, device=x.device).unsqueeze(0).unsqueeze(0)
+    Gy = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=x.dtype, device=x.device).unsqueeze(0).unsqueeze(0)
+
+    edge_x = F.conv2d(x, Gx, padding=1, groups=x.shape[1])
+    edge_y = F.conv2d(x, Gy, padding=1, groups=x.shape[1])
+
+    return torch.sqrt(edge_x ** 2 + edge_y ** 2 + 1e-6)
+    
 # 特征融合，将内容图的query和风格图的key/value组合在一起
 def feat_merge(opt, cnt_feats, sty_feats, start_step=0):
-    gamma = opt.gamma
-    T = opt.T
     feat_maps = [{'config': {
-        'gamma': gamma,
-        'T': T,
+        'gamma': opt.gamma,
+        'T': opt.T,
         'timestep': _
     }} for _ in range(50)]
+
+    lamada_schedule = {
+        'early': 0.2,
+        'middle': 0.9,
+        'late': 1.1
+    }
+    def get_lamada(i):
+        stps = len(feat_maps)
+        ratio = i / stps
+        early, middle, late = lamada_schedule['early'], lamada_schedule['middle'], lamada_schedule['late']
+        
+        def smoothstep(x):
+            return x * x * (3 - 2 * x)
+            
+        if ratio <= 0.2:
+            return early
+        elif 0.2 < ratio <= 0.4:
+            # linear interp: early → middle
+            t = smoothstep((ratio - 0.2) / 0.2)
+            return early + t * (middle - early)
+        elif 0.4 < ratio <= 0.6:
+            return middle
+        elif 0.6 < ratio <= 0.8:
+            # linear interp: middle → late
+            t = smoothstep((ratio - 0.6) / 0.2)
+            return middle + t * (late - middle)
+        else:
+            return late
 
     for i in range(len(feat_maps)):
         if i < (50 - start_step):
             continue
-
         cnt_feat = cnt_feats[i]
         sty_feat = sty_feats[i]
+        ori_keys = sty_feat.keys()
 
-        for ori_key in sty_feat.keys():
+        for ori_key in ori_keys:
             if ori_key.endswith('_q'):
                 # 始终使用内容图的 Query
                 feat_maps[i][ori_key] = cnt_feat[ori_key]
+                # q = cnt_feat[ori_key]
+                # edge_map = sobel_edge(q)
+                # enhanced_q = q + opt.edge_lambda * edge_map
+                # feat_maps[i][ori_key] = enhanced_q
+                
             elif ori_key.endswith('_k') or ori_key.endswith('_v'):
                 # 对 Key 和 Value 进行重加权融合
                 if ori_key in cnt_feat:
-                    feat_maps[i][ori_key] = (1 - gamma) * cnt_feat[ori_key] + gamma * sty_feat[ori_key]
+                    feat_maps[i][ori_key] = get_lamada(i) * sty_feat[ori_key] + (1 - get_lamada(i)) * cnt_feat[ori_key]
                 else:
                     feat_maps[i][ori_key] = sty_feat[ori_key]  # fallback
     return feat_maps
 
 # 加载图像，并resize到512x512，归一化为[-1,1]区间
-def load_img(path):
+def load_img(path, enhance = False, save_enhanced = True):
     image = Image.open(path).convert("RGB")
     x, y = image.size
     print(f"Loaded input image of size ({x}, {y}) from {path}")
@@ -71,15 +113,28 @@ def load_img(path):
     image = np.array(image).astype(np.float32) / 255.0
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image)
-    return 2.*image - 1.
+    image = 2.*image - 1.  # [-1,1]
+    
+    if enhance:
+        from line_enhancer import enhance_line
+        # save_dir = "data/cnt_enhanced"
+        # os.makedirs(save_dir, exist_ok=True)
+        # save_path = os.path.join(save_dir, os.path.basename(path))
+        image = enhance_line(image, method="xdog", save_path=None)  # 加入线条增强
+            
+    return image
 
 # AdaIN 算法：用风格图的均值方差调整内容图特征的分布
-def adain(cnt_feat, sty_feat):
+def adain(opt, cnt_feat, sty_feat):
     cnt_mean = cnt_feat.mean(dim=[0, 2, 3],keepdim=True)
     cnt_std = cnt_feat.std(dim=[0, 2, 3],keepdim=True)
     sty_mean = sty_feat.mean(dim=[0, 2, 3],keepdim=True)
     sty_std = sty_feat.std(dim=[0, 2, 3],keepdim=True)
-    output = ((cnt_feat-cnt_mean)/cnt_std)*sty_std + sty_mean
+
+    alpha = opt.alpha
+    aim_mean = alpha * sty_mean + (1 - alpha) * cnt_mean
+    aim_std = alpha * sty_std + (1 - alpha) * cnt_std
+    output = ((cnt_feat-cnt_mean)/cnt_std)*aim_std + aim_mean
     return output
 
 # 加载模型并恢复权重
@@ -125,8 +180,10 @@ def main():
     # attention温度调节参数
     parser.add_argument('--T', type=float, default=1.5, help='attention temperature scaling hyperparameter')
     # query保留度参数
-    parser.add_argument('--gamma', type=float, default=0.75, help='query preservation hyperparameter')
-    parser.add_argument('--lamada', type=float, default=0.25, help='内容风格融合权重，用于KV')
+    parser.add_argument('--alpha', type=float, default=0.8, help='AdaIN参数')
+    parser.add_argument('--gamma', type=float, default=0.8, help='query preservation hyperparameter')
+    parser.add_argument('--lamada', type=float, default=0.8, help='内容风格融合权重，用于KV')
+    parser.add_argument('--edge_lambda', type=float, default=0.5, help='Query 边缘增强的权重')
     # 注入attention的层
     parser.add_argument("--attn_layer", type=str, default='6,7,8,9,10,11', help='injection attention feature layers')
     # 模型配置文件
@@ -286,7 +343,7 @@ def main():
                 continue
             
             # 如果目标图已存在则跳过
-            init_cnt = load_img(cnt_name_).to(device)  # 加载内容图
+            init_cnt = load_img(cnt_name_, False).to(device)  # 加载内容图
             cnt_feat_name = os.path.join(feat_path_root, os.path.basename(cnt_name).split('.')[0] + '_cnt.pkl')
             cnt_feat = None
 
@@ -316,7 +373,7 @@ def main():
                         if opt.without_init_adain:
                             adain_z_enc = cnt_z_enc
                         else:
-                            adain_z_enc = adain(cnt_z_enc, sty_z_enc)
+                            adain_z_enc = adain(opt, cnt_z_enc, sty_z_enc)
                         # 合并注意力特征图
                         feat_maps = feat_merge(opt, cnt_feat, sty_feat, start_step=start_step)
                         if opt.without_attn_injection:

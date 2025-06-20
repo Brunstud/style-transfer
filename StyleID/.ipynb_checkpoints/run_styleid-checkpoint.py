@@ -339,9 +339,9 @@ def main():
                         img.save(output_file)
                         if len(feat_path_root) > 0:
                             print("Save features")
-                            if not os.path.isfile(cnt_feat_name):
-                                with open(cnt_feat_name, 'wb') as h:
-                                    pickle.dump(cnt_feat, h)
+                            # if not os.path.isfile(cnt_feat_name):
+                            #     with open(cnt_feat_name, 'wb') as h:
+                            #         pickle.dump(cnt_feat, h)
                             if not os.path.isfile(sty_feat_name):
                                 with open(sty_feat_name, 'wb') as h:
                                     pickle.dump(sty_feat, h)
